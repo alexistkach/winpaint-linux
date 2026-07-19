@@ -16,52 +16,87 @@ class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(APP_NAME)
-        self.set_default_size(1000, 700)
+        self.set_default_size(900, 600)
+        self.set_size_request(600, 400)  # Tamano minimo
         self._build_ui()
         self._setup_actions()
         self._setup_accelerators()
         self._connect_signals()
 
     def _build_ui(self):
+        """Construye la interfaz de usuario."""
+        # Contenedor principal vertical
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_child(main_box)
+        
+        # Menu
         self.menubar = MenuBar()
         main_box.append(self.menubar)
+        
+        # Area de trabajo horizontal
         work_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         work_box.set_vexpand(True)
         main_box.append(work_box)
+        
+        # Barra de herramientas (izquierda)
         left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         left_box.set_margin_start(4)
         left_box.set_margin_top(4)
         left_box.set_margin_bottom(4)
+        
         self.toolbox = ToolBox()
         left_box.append(self.toolbox)
+        
         self.color_box = ColorBox()
         left_box.append(self.color_box)
+        
         work_box.append(left_box)
         work_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+        
+        # === CANVAS AREA ===
+        # Box vertical: canvas arriba, resize handle abajo
+        canvas_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        canvas_container.set_vexpand(True)
+        canvas_container.set_hexpand(True)
+        
+        # Scroll solo para el canvas
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scroll.set_vexpand(True)
         scroll.set_hexpand(True)
-        overlay = Gtk.Overlay()
+        
         self.drawing_area = DrawingArea()
-        overlay.set_child(self.drawing_area)
+        self.drawing_area.set_size_request(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
+        scroll.set_child(self.drawing_area)
+        
+        canvas_container.append(scroll)
+        
+        # Resize handle - debajo del canvas, alineado a la derecha
+        handle_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        handle_box.set_hexpand(True)
+        
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        handle_box.append(spacer)
+        
         self.resize_handle = ResizeHandle()
-        self.resize_handle.set_halign(Gtk.Align.END)
-        self.resize_handle.set_valign(Gtk.Align.END)
-        self.resize_handle.set_margin_end(4)
-        self.resize_handle.set_margin_bottom(4)
         self.resize_handle.set_canvas_size(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
-        overlay.add_overlay(self.resize_handle)
-        scroll.set_child(overlay)
-        work_box.append(scroll)
+        handle_box.append(self.resize_handle)
+        
+        canvas_container.append(handle_box)
+        
+        work_box.append(canvas_container)
         work_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+        
+        # Barra de estado
         self.statusbar = StatusBar()
         main_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
         main_box.append(self.statusbar)
+        
         self.statusbar.set_image_size(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
 
+    
+        
     def _setup_actions(self):
         actions = [
             ("new", self._on_new), ("open", self._on_open), ("save", self._on_save),
@@ -80,12 +115,21 @@ class MainWindow(Gtk.ApplicationWindow):
     def _setup_accelerators(self):
         app = self.get_application()
         accelerators = [
-            ("app.new", "<Ctrl>n"), ("app.open", "<Ctrl>o"), ("app.save", "<Ctrl>s"),
-            ("app.quit", "<Ctrl>q"), ("app.undo", "<Ctrl>z"), ("app.redo", "<Ctrl>y"),
-            ("app.cut", "<Ctrl>x"), ("app.copy", "<Ctrl>c"), ("app.paste", "<Ctrl>v"),
-            ("app.delete", "Delete"), ("app.zoom-in", "<Ctrl>plus"),
-            ("app.zoom-out", "<Ctrl>minus"), ("app.zoom-reset", "<Ctrl>0"),
+            ("win.new", "<Ctrl>n"),
+            ("win.open", "<Ctrl>o"),
+            ("win.save", "<Ctrl>s"),
+            ("win.quit", "<Ctrl>q"),
+            ("win.undo", "<Ctrl>z"),
+            ("win.redo", "<Ctrl>y"),
+            ("win.cut", "<Ctrl>x"),
+            ("win.copy", "<Ctrl>c"),
+            ("win.paste", "<Ctrl>v"),
+            ("win.delete", "Delete"),
+            ("win.zoom-in", "<Ctrl>plus"),
+            ("win.zoom-out", "<Ctrl>minus"),
+            ("win.zoom-reset", "<Ctrl>0"),
         ]
+        
         for action, accel in accelerators:
             app.set_accels_for_action(action, [accel])
 
@@ -121,11 +165,13 @@ class MainWindow(Gtk.ApplicationWindow):
     def _on_resize_request(self, canvas, width, height):
         self.statusbar.set_image_size(width, height)
         self.resize_handle.set_canvas_size(width, height)
-
+        self._update_resize_handle_position()
+        
     def _on_handle_resize(self, handle, width, height):
         self.drawing_area.resize_image(width, height)
         self.statusbar.set_image_size(width, height)
-
+        self._update_resize_handle_position()
+        
     def _on_new(self, action, param):
         if self._check_save_changes():
             self._create_size_dialog().present()
@@ -243,7 +289,7 @@ class MainWindow(Gtk.ApplicationWindow):
         dialog.set_version(VERSION)
         dialog.set_comments("Un clon fiel de Microsoft Paint para Linux")
         dialog.set_license_type(Gtk.License.MIT_X11)
-        dialog.set_website("https://github.com/tu-usuario/winpaint-linux")
+        dialog.set_website("https://github.com/alexistkach/winpaint-linux")
         dialog.present()
 
     def _check_save_changes(self):
