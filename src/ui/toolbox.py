@@ -71,7 +71,8 @@ class ToolBox(Gtk.Box):
         frame.set_child(container)
         self.append(frame)
         self._select_tool("pencil")
-
+        self.set_size_request(-1, 200)  # Alto maximo sugerido
+        
     def _create_tool_button(self, tool_id, tooltip, icon_name, emoji):
         btn = Gtk.ToggleButton()
         btn.set_size_request(40, 40)

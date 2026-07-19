@@ -24,6 +24,8 @@ class DrawingArea(Gtk.DrawingArea):
     def __init__(self):
         super().__init__()
         self.image = PaintImage(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
+        # Forzar tamano natural 0 para que el layout no expanda
+        self.set_size_request(100, 100)  # Minimo visible pero pequeno
         self.history = HistoryManager(max_history=50)
         self.history.push_state(self.image.surface)
         self.tools = {
@@ -37,8 +39,6 @@ class DrawingArea(Gtk.DrawingArea):
         self.primary_color = (0, 0, 0)
         self.secondary_color = (1, 1, 1)
         self._update_tool_colors()
-        self.set_content_width(DEFAULT_CANVAS_WIDTH)
-        self.set_content_height(DEFAULT_CANVAS_HEIGHT)
         self.set_draw_func(self._draw, None)
         self._setup_events()
         self.zoom = 1.0
@@ -61,18 +61,35 @@ class DrawingArea(Gtk.DrawingArea):
         self.add_controller(scroll)
 
     def _draw(self, area, ctx, width, height, data):
-        ctx.set_source_rgb(0.5, 0.5, 0.5)
-        ctx.paint()
-        ctx.save()
-        ctx.translate(self.offset_x, self.offset_y)
-        ctx.scale(self.zoom, self.zoom)
-        ctx.set_source_surface(self.image.surface, 0, 0)
-        ctx.paint()
-        ctx.set_source_surface(self.image.preview_surface, 0, 0)
-        ctx.paint()
-        if self.current_tool_name == "select_rect" and self.current_tool.has_selection:
-            self._draw_selection_marching_ants(ctx)
-        ctx.restore()
+            """Funcion de dibujo del widget."""
+            # Fondo del area (gris como Paint)
+            ctx.set_source_rgb(0.5, 0.5, 0.5)
+            ctx.paint()
+            
+            # Calcular offset para centrar el canvas
+            img_w = self.image.width * self.zoom
+            img_h = self.image.height * self.zoom
+            self.offset_x = max(0, (width - img_w) / 2)
+            self.offset_y = max(0, (height - img_h) / 2)
+            
+            # Aplicar zoom y offset
+            ctx.save()
+            ctx.translate(self.offset_x, self.offset_y)
+            ctx.scale(self.zoom, self.zoom)
+            
+            # Dibujar imagen principal
+            ctx.set_source_surface(self.image.surface, 0, 0)
+            ctx.paint()
+            
+            # Dibujar preview
+            ctx.set_source_surface(self.image.preview_surface, 0, 0)
+            ctx.paint()
+            
+            # Marching ants
+            if self.current_tool_name == "select_rect" and self.current_tool.has_selection:
+                self._draw_selection_marching_ants(ctx)
+            
+            ctx.restore()
 
     def _draw_selection_marching_ants(self, ctx):
         if not self.current_tool.selection:
@@ -175,8 +192,6 @@ class DrawingArea(Gtk.DrawingArea):
         self.image.new(width, height)
         self.history.clear()
         self.history.push_state(self.image.surface)
-        self.set_content_width(width)
-        self.set_content_height(height)
         self.queue_draw()
         self.emit("image-modified", False)
         self.emit("resize-request", width, height)
@@ -186,8 +201,6 @@ class DrawingArea(Gtk.DrawingArea):
             self.image.load(filepath)
             self.history.clear()
             self.history.push_state(self.image.surface)
-            self.set_content_width(self.image.width)
-            self.set_content_height(self.image.height)
             self.queue_draw()
             self.emit("image-modified", False)
             self.emit("resize-request", self.image.width, self.image.height)
@@ -216,8 +229,6 @@ class DrawingArea(Gtk.DrawingArea):
 
     def resize_image(self, new_width, new_height):
         self.image.resize(new_width, new_height)
-        self.set_content_width(new_width)
-        self.set_content_height(new_height)
         self.history.push_state(self.image.surface)
         self.queue_draw()
         self.emit("image-modified", True)

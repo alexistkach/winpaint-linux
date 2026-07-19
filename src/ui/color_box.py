@@ -94,6 +94,7 @@ class ColorBox(Gtk.Box):
 
         frame.set_child(container)
         self.append(frame)
+        self.set_size_request(-1, 150)  # Alto maximo sugerido
 
     def _draw_primary_color(self, area, ctx, width, height, data):
         """Dibuja el preview del color primario."""

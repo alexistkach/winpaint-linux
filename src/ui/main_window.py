@@ -16,8 +16,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(APP_NAME)
-        self.set_default_size(900, 600)
-        self.set_size_request(600, 400)  # Tamano minimo
+        self.set_default_size(800, 500)
+        self.set_size_request(500, 300)  # Tamano minimo
         self._build_ui()
         self._setup_actions()
         self._setup_accelerators()
@@ -39,6 +39,11 @@ class MainWindow(Gtk.ApplicationWindow):
         main_box.append(work_box)
         
         # Barra de herramientas (izquierda)
+        # Barra de herramientas (izquierda) - con scroll si es muy alta
+        left_scroll = Gtk.ScrolledWindow()
+        left_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        left_scroll.set_size_request(120, 100)  # Ancho fijo, alto minimo pequeno
+        
         left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         left_box.set_margin_start(4)
         left_box.set_margin_top(4)
@@ -50,44 +55,26 @@ class MainWindow(Gtk.ApplicationWindow):
         self.color_box = ColorBox()
         left_box.append(self.color_box)
         
-        work_box.append(left_box)
+        left_scroll.set_child(left_box)
+        work_box.append(left_scroll)
         work_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
         
         # === CANVAS AREA ===
-        # Box vertical: canvas arriba, resize handle abajo
-        canvas_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        canvas_container.set_vexpand(True)
-        canvas_container.set_hexpand(True)
-        
-        # Scroll solo para el canvas
+        # El canvas con scroll limitado
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scroll.set_vexpand(True)
         scroll.set_hexpand(True)
         
         self.drawing_area = DrawingArea()
-        self.drawing_area.set_size_request(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
         scroll.set_child(self.drawing_area)
         
-        canvas_container.append(scroll)
-        
-        # Resize handle - debajo del canvas, alineado a la derecha
-        handle_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        handle_box.set_hexpand(True)
-        
-        spacer = Gtk.Box()
-        spacer.set_hexpand(True)
-        handle_box.append(spacer)
-        
-        self.resize_handle = ResizeHandle()
-        self.resize_handle.set_canvas_size(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
-        handle_box.append(self.resize_handle)
-        
-        canvas_container.append(handle_box)
-        
-        work_box.append(canvas_container)
+        work_box.append(scroll)
         work_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
         
+        # Resize handle - FUERA del scroll, en la barra de estado o al lado
+        # Por ahora lo omitimos hasta que el layout base funcione
+                
         # Barra de estado
         self.statusbar = StatusBar()
         main_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
@@ -141,7 +128,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.drawing_area.connect("coordinates-changed", self._on_coordinates_changed)
         self.drawing_area.connect("image-modified", self._on_image_modified)
         self.drawing_area.connect("resize-request", self._on_resize_request)
-        self.resize_handle.connect("resize-request", self._on_handle_resize)
+        #self.resize_handle.connect("resize-request", self._on_handle_resize)
 
     def _on_tool_selected(self, toolbox, tool_name):
         self.drawing_area.set_tool(tool_name)
