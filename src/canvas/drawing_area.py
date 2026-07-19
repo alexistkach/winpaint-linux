@@ -115,8 +115,17 @@ class DrawingArea(Gtk.DrawingArea):
 
     def _on_motion(self, controller, x, y):
         canvas_x, canvas_y = self._get_canvas_coords(x, y)
-        if self.current_tool.is_drawing:
+        
+        # Cambiar cursor si estamos sobre selección
+        if self.current_tool_name == "select_rect" and self.current_tool.has_selection:
+            if self.current_tool._point_in_selection(canvas_x, canvas_y):
+                self.set_cursor_from_name("grab")
+            else:
+                self.set_cursor_from_name("default")
+        
+        if self.current_tool.is_drawing or getattr(self.current_tool, 'is_moving', False):
             self.current_tool.on_motion(self, canvas_x, canvas_y)
+        
         self._update_coordinates(canvas_x, canvas_y)
 
     def _on_button_release(self, gesture, n_press, x, y):

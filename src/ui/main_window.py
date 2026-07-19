@@ -3,7 +3,7 @@ import os
 import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gdk, Gio, GLib
-
+from src.core.clipboard import ClipboardManager
 from src.ui.toolbox import ToolBox
 from src.ui.color_box import ColorBox
 from src.ui.statusbar import StatusBar
@@ -22,7 +22,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self._setup_actions()
         self._setup_accelerators()
         self._connect_signals()
-
+        self.clipboard = ClipboardManager(self)
+        
     def _build_ui(self):
         """Construye la interfaz de usuario."""
         # Contenedor principal vertical
@@ -268,14 +269,31 @@ class MainWindow(Gtk.ApplicationWindow):
     def _on_redo(self, action, param):
         self.drawing_area.redo()
 
-    def _on_cut(self, action, param):
-        pass
-
     def _on_copy(self, action, param):
-        pass
-
+        tool = self.drawing_area.current_tool
+        if hasattr(tool, 'selection_surface') and tool.selection_surface:
+            self.clipboard.copy_selection(tool.selection_surface, tool.selection)
+    
+    def _on_cut(self, action, param):
+        tool = self.drawing_area.current_tool
+        if hasattr(tool, 'selection_surface') and tool.selection_surface:
+            self.clipboard.cut_selection(
+                tool.selection_surface, 
+                tool.selection,
+                self.drawing_area.image.surface
+            )
+            self.drawing_area.queue_draw()
+            self.drawing_area.commit_drawing()
+    
     def _on_paste(self, action, param):
-        pass
+        surface, bounds = self.clipboard.paste(self.drawing_area)
+        if surface:
+            # Dibujar la superficie pegada en el canvas
+            ctx = self.drawing_area.image.context
+            ctx.set_source_surface(surface, 0, 0)
+            ctx.paint()
+            self.drawing_area.queue_draw()
+            self.drawing_area.commit_drawing()
 
     def _on_delete(self, action, param):
         pass
