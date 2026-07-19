@@ -9,7 +9,7 @@ description = "Un clon fiel de Microsoft Paint para Linux (Debian/GNOME)"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Tu Nombre", email = "tu@email.com"}
+    {name = "Alexis Tkach", email = "tkach@hotmail.com"}
 ]
 keywords = ["paint", "drawing", "gtk", "linux", "mspaint"]
 classifiers = [
@@ -38,9 +38,9 @@ dev = [
 ]
 
 [project.scripts]
-winpaint = "src.main:main"
+winpaint = "main:main"
 
 [project.urls]
-Homepage = "https://github.com/tu-usuario/winpaint-linux"
-Repository = "https://github.com/tu-usuario/winpaint-linux"
-Issues = "https://github.com/tu-usuario/winpaint-linux/issues"
+Homepage = "https://github.com/alexistkach/winpaint-linux"
+Repository = "https://github.com/alexistkach/winpaint-linux"
+Issues = "https://github.com/alexistkach/winpaint-linux/issues"

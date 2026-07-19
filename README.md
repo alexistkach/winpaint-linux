@@ -30,7 +30,7 @@ Un clon fiel de **Microsoft Paint** para Linux, construido con **Python + GTK4 +
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/winpaint-linux.git
+git clone https://github.com/alexistkach/winpaint-linux.git
 cd winpaint-linux
 
 # 2. Instalar dependencias del sistema
