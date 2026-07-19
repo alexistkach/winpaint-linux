@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "winpaint-linux"
+version = "0.1.0"
+description = "Un clon fiel de Microsoft Paint para Linux (Debian/GNOME)"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Tu Nombre", email = "tu@email.com"}
+]
+keywords = ["paint", "drawing", "gtk", "linux", "mspaint"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics :: Editors",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "Pillow>=10.0.0",
+]
+# NOTA: PyGObject debe instalarse desde apt: python3-gi python3-gi-cairo
+# No se incluye aqui para evitar compilacion desde fuentes.
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "black>=23.0",
+    "flake8>=6.0",
+]
+
+[project.scripts]
+winpaint = "src.main:main"
+
+[project.urls]
+Homepage = "https://github.com/tu-usuario/winpaint-linux"
+Repository = "https://github.com/tu-usuario/winpaint-linux"
+Issues = "https://github.com/tu-usuario/winpaint-linux/issues"
