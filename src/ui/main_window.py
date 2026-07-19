@@ -59,21 +59,39 @@ class MainWindow(Gtk.ApplicationWindow):
         work_box.append(left_scroll)
         work_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
         
-        # === CANVAS AREA ===
-        # El canvas con scroll limitado
+        # === CANVAS CON FIXED PARA RESIZE HANDLE ===
+        # Box que contiene el fixed (canvas + handle) con scroll
+        canvas_outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        canvas_outer.set_vexpand(True)
+        canvas_outer.set_hexpand(True)
+        
+        # Scroll para cuando el canvas es mas grande que la ventana
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scroll.set_vexpand(True)
         scroll.set_hexpand(True)
         
+        # Fixed con tamano exacto del canvas
+# Fixed con tamano exacto del canvas
+        self.canvas_fixed = Gtk.Fixed()
+        self.canvas_fixed.set_size_request(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
+        
+        # Canvas - tamano exacto igual al fixed
         self.drawing_area = DrawingArea()
-        scroll.set_child(self.drawing_area)
+        self.drawing_area.set_size_request(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
+        self.canvas_fixed.put(self.drawing_area, 0, 0)
         
-        work_box.append(scroll)
+        # Resize handle en la esquina del canvas
+# Resize handle FUERA del canvas, en la esquina inferior derecha
+        self.resize_handle = ResizeHandle()
+        self.resize_handle.set_canvas_size(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
+        self.canvas_fixed.put(self.resize_handle, DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
+        
+        scroll.set_child(self.canvas_fixed)
+        canvas_outer.append(scroll)
+        
+        work_box.append(canvas_outer)
         work_box.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
-        
-        # Resize handle - FUERA del scroll, en la barra de estado o al lado
-        # Por ahora lo omitimos hasta que el layout base funcione
                 
         # Barra de estado
         self.statusbar = StatusBar()
@@ -82,7 +100,13 @@ class MainWindow(Gtk.ApplicationWindow):
         
         self.statusbar.set_image_size(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
 
-    
+    def _update_resize_handle_position(self):
+                    """Actualiza la posicion del resize handle."""
+                    width, height = self.drawing_area.get_image_dimensions()
+                    self.canvas_fixed.set_size_request(width, height)
+                    self.drawing_area.set_size_request(width, height)
+                    # Handle FUERA del canvas (8x8px, mitad adentro mitad afuera visualmente)
+                    self.canvas_fixed.move(self.resize_handle, width - 4, height - 4)        
         
     def _setup_actions(self):
         actions = [
@@ -128,7 +152,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.drawing_area.connect("coordinates-changed", self._on_coordinates_changed)
         self.drawing_area.connect("image-modified", self._on_image_modified)
         self.drawing_area.connect("resize-request", self._on_resize_request)
-        #self.resize_handle.connect("resize-request", self._on_handle_resize)
+        self.resize_handle.connect("resize-request", self._on_handle_resize)
 
     def _on_tool_selected(self, toolbox, tool_name):
         self.drawing_area.set_tool(tool_name)
@@ -153,7 +177,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.statusbar.set_image_size(width, height)
         self.resize_handle.set_canvas_size(width, height)
         self._update_resize_handle_position()
-        
+
     def _on_handle_resize(self, handle, width, height):
         self.drawing_area.resize_image(width, height)
         self.statusbar.set_image_size(width, height)

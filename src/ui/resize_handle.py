@@ -20,7 +20,9 @@ class ResizeHandle(Gtk.DrawingArea):
         self.drag_start_y = 0
         self.current_width = 0
         self.current_height = 0
-
+        self.set_halign(Gtk.Align.END)
+        self.set_valign(Gtk.Align.END)
+        
     def _setup_drag(self):
         drag = Gtk.GestureDrag.new()
         drag.connect("drag-begin", self._on_drag_begin)
@@ -45,9 +47,11 @@ class ResizeHandle(Gtk.DrawingArea):
         pass
 
     def _on_drag_end(self, gesture, offset_x, offset_y):
-        new_w = max(1, int(self.current_width + offset_x))
-        new_h = max(1, int(self.current_height + offset_y))
-        self.emit("resize-request", new_w, new_h)
+            # El offset es relativo al inicio del drag, no a la posicion actual
+            # Necesitamos calcular el nuevo tamano basado en la posicion actual del mouse
+            new_w = max(1, int(self.current_width + offset_x))
+            new_h = max(1, int(self.current_height + offset_y))
+            self.emit("resize-request", new_w, new_h)
 
     def set_canvas_size(self, width, height):
         self.current_width = width
