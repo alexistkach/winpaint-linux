@@ -10,7 +10,7 @@ from src.core.constants import DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT
 from src.canvas.history import HistoryManager
 from src.canvas.tools import (
     PencilTool, BrushTool, LineTool, RectangleTool,
-    EllipseTool, EraserTool, FillTool, TextTool, SelectRectTool
+    EllipseTool, EraserTool, FillTool, TextTool, SelectRectTool, SelectFreeTool
 )
 
 class DrawingArea(Gtk.DrawingArea):
@@ -33,6 +33,7 @@ class DrawingArea(Gtk.DrawingArea):
             "rectangle": RectangleTool(), "ellipse": EllipseTool(),
             "eraser": EraserTool(), "fill": FillTool(), "text": TextTool(),
             "select_rect": SelectRectTool(),
+            "select_free": SelectFreeTool(),            
         }
         self.current_tool_name = "pencil"
         self.current_tool = self.tools["pencil"]
@@ -117,7 +118,7 @@ class DrawingArea(Gtk.DrawingArea):
         canvas_x, canvas_y = self._get_canvas_coords(x, y)
         
         # Cambiar cursor si estamos sobre selección
-        if self.current_tool_name == "select_rect" and self.current_tool.has_selection:
+        if self.current_tool_name in ("select_rect", "select_free") and self.current_tool.has_selection:
             if self.current_tool._point_in_selection(canvas_x, canvas_y):
                 self.set_cursor_from_name("grab")
             else:

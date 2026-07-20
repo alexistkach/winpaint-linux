@@ -10,6 +10,7 @@ from src.canvas.tools.eraser import EraserTool
 from src.canvas.tools.fill import FillTool
 from src.canvas.tools.text import TextTool
 from src.canvas.tools.select import SelectRectTool
+from src.canvas.tools.select_free import SelectFreeTool
 
 __all__ = [
     "PencilTool",
@@ -21,4 +22,5 @@ __all__ = [
     "FillTool",
     "TextTool",
     "SelectRectTool",
+    "SelectFreeTool",    
 ]
