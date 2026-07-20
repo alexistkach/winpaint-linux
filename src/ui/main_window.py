@@ -288,15 +288,40 @@ class MainWindow(Gtk.ApplicationWindow):
     def _on_paste(self, action, param):
         surface, bounds = self.clipboard.paste(self.drawing_area)
         if surface:
-            # Dibujar la superficie pegada en el canvas
+            # Pegar en (0,0) o en el centro del viewport
+            paste_x, paste_y = 0, 0
+            
             ctx = self.drawing_area.image.context
-            ctx.set_source_surface(surface, 0, 0)
+            ctx.set_source_surface(surface, paste_x, paste_y)
             ctx.paint()
+            
+            # Crear selección alrededor de lo pegado para poder moverlo
+            width = surface.get_width()
+            height = surface.get_height()
+            
+            # Cambiar a herramienta de selección y seleccionar lo pegado
+            self.drawing_area.set_tool("select_rect")
+            tool = self.drawing_area.current_tool
+            tool.selection = (paste_x, paste_y, width, height)
+            tool.has_selection = True
+            tool.selection_surface = surface
+            
             self.drawing_area.queue_draw()
             self.drawing_area.commit_drawing()
 
     def _on_delete(self, action, param):
-        pass
+        tool = self.drawing_area.current_tool
+        if hasattr(tool, 'has_selection') and tool.has_selection:
+            # Borrar área seleccionada (rellenar con color secundario/blanco)
+            if tool.selection:
+                x, y, w, h = tool.selection
+                ctx = self.drawing_area.image.context
+                ctx.set_source_rgb(1, 1, 1)  # Blanco
+                ctx.rectangle(x, y, w, h)
+                ctx.fill()
+                self.drawing_area.commit_drawing()
+            tool.clear_selection()
+            self.drawing_area.queue_draw()
 
     def _on_zoom_in(self, action, param):
         self.drawing_area.zoom_in()

@@ -2,7 +2,7 @@
 import cairo
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Gdk, GObject, Gio
+from gi.repository import Gtk, Gdk, GObject, GLib, Gio
 import io
 
 
@@ -28,38 +28,29 @@ class ClipboardManager:
         surface.write_to_png(buf)
         png_bytes = buf.getvalue()
         
-        # Crear Gdk.Texture desde los bytes PNG
+        # Intentar copiar al portapapeles del sistema (puede fallar según el backend)
         try:
             texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(png_bytes))
             self.clipboard.set_texture(texture)
-        except Exception as e:
-            print(f"Error al copiar al portapapeles: {e}")
+        except Exception:
+            # Silenciar error del backend del portapapeles
+            pass
     
     def cut_selection(self, surface, bounds, target_surface):
-        """Corta una selección (copia + borra)."""
+        """Corta una selección (copia + borra dejando blanco)."""
         self.copy_selection(surface, bounds)
         
-        # Borrar área seleccionada
         if bounds:
             x, y, w, h = bounds
             ctx = cairo.Context(target_surface)
-            ctx.set_operator(cairo.OPERATOR_CLEAR)
+            ctx.set_source_rgb(1, 1, 1)  # Blanco, no clear
             ctx.rectangle(x, y, w, h)
             ctx.fill()
     
     def paste(self, canvas):
-        """Lee del portapapeles del sistema y pega en el canvas."""
-        # Primero intentar del portapapeles del sistema
-        texture = self.clipboard.read_texture_finish(None)
-        if texture:
-            # Convertir Gdk.Texture a cairo.ImageSurface
-            width = texture.get_width()
-            height = texture.get_height()
-            surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-            # TODO: convertir texture bytes a surface
-            return surface, (0, 0, width, height)
-        
-        # Fallback al almacenamiento interno
+        """Devuelve la selección almacenada internamente."""
+        # TODO: Implementar lectura del portapapeles del sistema
+        # Por ahora, solo pegado interno (copiar -> pegar en la misma sesión)
         return self.stored_surface, self.stored_bounds
 
     def paste_async(self, canvas, callback):

@@ -24,18 +24,20 @@ class SelectRectTool(BaseTool):
             self.is_moving = True
             self.move_offset_x = x - self.selection[0]
             self.move_offset_y = y - self.selection[1]
+            
+            # BORRAR el área original del canvas (dejar blanco)
+            sx, sy, sw, sh = self.selection
+            ctx = canvas.image.context
+            ctx.set_source_rgb(1, 1, 1)  # Blanco
+            ctx.rectangle(sx, sy, sw, sh)
+            ctx.fill()
+            canvas.commit_drawing()
+            
             return
-        
-        # Si hay selección y click fuera, limpiar
-        if self.has_selection:
-            self.clear_selection()
-            canvas.queue_draw()
-        
-        # Nueva selección
         self.is_drawing = True
         self.start_x = x
         self.start_y = y
-        canvas.image.clear_preview()
+        canvas.image.clear_preview()                
     
     def _point_in_selection(self, x, y):
         """Verifica si un punto está dentro de la selección."""
@@ -88,8 +90,17 @@ class SelectRectTool(BaseTool):
     def on_release(self, canvas, x, y):
         if self.is_moving:
             self.is_moving = False
-            # Re-extraer la selección en la nueva posición? 
-            # O dejarla como "flotante" hasta que se confirme?
+            
+            # Pegar la selección en la nueva posición
+            if self.selection_surface and self.selection:
+                sx, sy, sw, sh = self.selection
+                ctx = canvas.image.context
+                ctx.set_source_surface(self.selection_surface, sx, sy)
+                ctx.paint()
+                canvas.commit_drawing()
+            
+            # NO limpiar la selección - queda activa para seguir moviendo
+            canvas.queue_draw()
             return
         
         self.is_drawing = False
