@@ -175,6 +175,10 @@ class DrawingArea(Gtk.DrawingArea):
         for tool in self.tools.values():
             tool.set_brush_size(size)
 
+    def set_fill_mode(self, mode):
+        self.tools["rectangle"].set_fill_mode(mode)
+        self.tools["ellipse"].set_fill_mode(mode)
+
     def commit_drawing(self):
         self.history.push_state(self.image.surface)
         self.image.modified = True

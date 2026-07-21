@@ -60,6 +60,7 @@ class FillTool(BaseTool):
         
         visited = set()
         visited.add((start_x, start_y))
+        border = set()
         
         b, g, r, a = fill_color[2], fill_color[1], fill_color[0], fill_color[3]
         
@@ -84,14 +85,38 @@ class FillTool(BaseTool):
                     if self._color_matches((nr, ng, nb, na), target_color):
                         visited.add((nx, ny))
                         queue.append((nx, ny))
+                    else:
+                        border.add((nx, ny))
+        
+        # Segunda pasada: cierra el halo antialiased (1-2 px) del borde con
+        # tolerancia mayor pero alcance acotado, para no "fugarse" del borde.
+        fringe_tolerance = min(self.tolerance * 5, 200)
+        for _ in range(2):
+            next_border = set()
+            for nx, ny in border:
+                if (nx, ny) in visited:
+                    continue
+                noffset = ny * stride + nx * 4
+                nb, ng, nr, na = data[noffset], data[noffset+1], data[noffset+2], data[noffset+3]
+                if self._color_matches((nr, ng, nb, na), target_color, fringe_tolerance):
+                    data[noffset] = b
+                    data[noffset + 1] = g
+                    data[noffset + 2] = r
+                    data[noffset + 3] = a
+                    visited.add((nx, ny))
+                    for mx, my in [(nx-1, ny), (nx+1, ny), (nx, ny-1), (nx, ny+1)]:
+                        if 0 <= mx < width and 0 <= my < height and (mx, my) not in visited:
+                            next_border.add((mx, my))
+            border = next_border
         
         # FIX: Marcar dirty DESPUES de modificar todo el buffer
         surface.mark_dirty()
         canvas.queue_draw()
     
-    def _color_matches(self, color1, color2):
+    def _color_matches(self, color1, color2, tolerance=None):
         """Verifica si dos colores estan dentro de la tolerancia."""
+        tol = self.tolerance if tolerance is None else tolerance
         for c1, c2 in zip(color1[:3], color2[:3]):
-            if abs(c1 - c2) > self.tolerance:
+            if abs(c1 - c2) > tol:
                 return False
         return True

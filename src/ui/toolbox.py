@@ -7,6 +7,7 @@ class ToolBox(Gtk.Box):
     __gsignals__ = {
         "tool-selected": (GObject.SIGNAL_RUN_FIRST, None, (str,)),
         "brush-size-changed": (GObject.SIGNAL_RUN_FIRST, None, (int,)),
+        "fill-mode-changed": (GObject.SIGNAL_RUN_FIRST, None, (str,)),
     }
 
     TOOLS = [
@@ -51,6 +52,27 @@ class ToolBox(Gtk.Box):
             self.tool_buttons[tool_id] = btn
 
         container.append(tools_grid)
+        container.append(Gtk.Separator())
+
+        # --- Estilo de forma (solo para rectangulo/elipse) ---
+        self.fill_mode = "outline"
+        self.fill_mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        fill_label = Gtk.Label(label="Estilo:")
+        fill_label.set_halign(Gtk.Align.START)
+        self.fill_mode_box.append(fill_label)
+
+        self._fill_buttons = {}
+        FILL_MODES = [("outline", "Contorno", "⬜"), ("outline_fill", "Contorno + relleno", "🔳"), ("fill", "Solo relleno", "⬛")]
+        for mode, tooltip, emoji in FILL_MODES:
+            btn = Gtk.ToggleButton(label=emoji)
+            btn.set_tooltip_text(tooltip)
+            btn.set_active(mode == self.fill_mode)
+            btn.connect("toggled", self._on_fill_mode_toggled, mode)
+            self._fill_buttons[mode] = btn
+            self.fill_mode_box.append(btn)
+
+        self.fill_mode_box.set_visible(False)
+        container.append(self.fill_mode_box)
         container.append(Gtk.Separator())
 
         size_label = Gtk.Label(label="Tamano:")
@@ -98,7 +120,19 @@ class ToolBox(Gtk.Box):
         self.current_tool = tool_id
         for tid, btn in self.tool_buttons.items():
             btn.set_active(tid == tool_id)
+        self.fill_mode_box.set_visible(tool_id in ("rectangle", "ellipse"))
         self.emit("tool-selected", tool_id)
+
+    def _on_fill_mode_toggled(self, btn, mode):
+        if btn.get_active():
+            self.fill_mode = mode
+            for m, b in self._fill_buttons.items():
+                if b is not btn:
+                    b.set_active(False)
+            self.emit("fill-mode-changed", mode)
+        elif not any(b.get_active() for b in self._fill_buttons.values()):
+            # Evitar que quede sin ninguno activo (comportamiento tipo radio)
+            btn.set_active(True)
 
     def _on_size_changed(self, widget):
         size = int(widget.get_value())

@@ -148,6 +148,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def _connect_signals(self):
         self.toolbox.connect("tool-selected", self._on_tool_selected)
         self.toolbox.connect("brush-size-changed", self._on_brush_size_changed)
+        self.toolbox.connect("fill-mode-changed", self._on_fill_mode_changed)
         self.color_box.connect("primary-color-changed", self._on_primary_color_changed)
         self.color_box.connect("secondary-color-changed", self._on_secondary_color_changed)
         self.drawing_area.connect("coordinates-changed", self._on_coordinates_changed)
@@ -160,6 +161,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _on_brush_size_changed(self, toolbox, size):
         self.drawing_area.set_brush_size(size)
+
+    def _on_fill_mode_changed(self, toolbox, mode):
+        self.drawing_area.set_fill_mode(mode)
 
     def _on_primary_color_changed(self, color_box, color):
         self.drawing_area.set_primary_color(color)
