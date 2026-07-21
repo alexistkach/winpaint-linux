@@ -89,6 +89,9 @@ class DrawingArea(Gtk.DrawingArea):
             # Marching ants
             if self.current_tool_name == "select_rect" and self.current_tool.has_selection:
                 self._draw_selection_marching_ants(ctx)
+                # Handles de resize (solo cuando no se está dibujando una selección nueva)
+                if not self.current_tool.is_drawing:
+                    self.current_tool.draw_handles(ctx, self.zoom)
             
             ctx.restore()
 
@@ -117,14 +120,19 @@ class DrawingArea(Gtk.DrawingArea):
     def _on_motion(self, controller, x, y):
         canvas_x, canvas_y = self._get_canvas_coords(x, y)
         
-        # Cambiar cursor si estamos sobre selección
-        if self.current_tool_name in ("select_rect", "select_free") and self.current_tool.has_selection:
+        # Cambiar cursor si estamos sobre selección (incluyendo handles de resize)
+        if self.current_tool_name == "select_rect" and self.current_tool.has_selection:
+            if not getattr(self.current_tool, 'is_resizing', False):
+                cursor_name = self.current_tool.get_cursor_name_at(canvas_x, canvas_y, self.zoom)
+                self.set_cursor_from_name(cursor_name)
+        elif self.current_tool_name == "select_free" and self.current_tool.has_selection:
             if self.current_tool._point_in_selection(canvas_x, canvas_y):
                 self.set_cursor_from_name("grab")
             else:
                 self.set_cursor_from_name("default")
         
-        if self.current_tool.is_drawing or getattr(self.current_tool, 'is_moving', False):
+        if (self.current_tool.is_drawing or getattr(self.current_tool, 'is_moving', False)
+                or getattr(self.current_tool, 'is_resizing', False)):
             self.current_tool.on_motion(self, canvas_x, canvas_y)
         
         self._update_coordinates(canvas_x, canvas_y)
