@@ -102,12 +102,14 @@ class MainWindow(Gtk.ApplicationWindow):
         self.statusbar.set_image_size(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT)
 
     def _update_resize_handle_position(self):
-                    """Actualiza la posicion del resize handle."""
+                    """Actualiza el tamano solicitado del canvas (considerando el zoom) y la posicion del resize handle."""
                     width, height = self.drawing_area.get_image_dimensions()
-                    self.canvas_fixed.set_size_request(width, height)
-                    self.drawing_area.set_size_request(width, height)
+                    zoom = self.drawing_area.zoom
+                    zwidth, zheight = max(1, round(width * zoom)), max(1, round(height * zoom))
+                    self.canvas_fixed.set_size_request(zwidth, zheight)
+                    self.drawing_area.set_size_request(zwidth, zheight)
                     # Handle FUERA del canvas (8x8px, mitad adentro mitad afuera visualmente)
-                    self.canvas_fixed.move(self.resize_handle, width - 4, height - 4)        
+                    self.canvas_fixed.move(self.resize_handle, zwidth - 4, zheight - 4)
         
     def _setup_actions(self):
         actions = [
@@ -154,6 +156,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.drawing_area.connect("coordinates-changed", self._on_coordinates_changed)
         self.drawing_area.connect("image-modified", self._on_image_modified)
         self.drawing_area.connect("resize-request", self._on_resize_request)
+        self.drawing_area.connect("zoom-changed", self._on_zoom_changed)
         self.resize_handle.connect("resize-request", self._on_handle_resize)
 
     def _on_tool_selected(self, toolbox, tool_name):
@@ -181,6 +184,9 @@ class MainWindow(Gtk.ApplicationWindow):
     def _on_resize_request(self, canvas, width, height):
         self.statusbar.set_image_size(width, height)
         self.resize_handle.set_canvas_size(width, height)
+        self._update_resize_handle_position()
+
+    def _on_zoom_changed(self, canvas, zoom):
         self._update_resize_handle_position()
 
     def _on_handle_resize(self, handle, width, height):

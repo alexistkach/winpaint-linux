@@ -19,6 +19,7 @@ class DrawingArea(Gtk.DrawingArea):
         "image-modified": (GObject.SIGNAL_RUN_FIRST, None, (bool,)),
         "tool-changed": (GObject.SIGNAL_RUN_FIRST, None, (str,)),
         "resize-request": (GObject.SIGNAL_RUN_FIRST, None, (int, int)),
+        "zoom-changed": (GObject.SIGNAL_RUN_FIRST, None, (float,)),
     }
 
     def __init__(self):
@@ -86,6 +87,10 @@ class DrawingArea(Gtk.DrawingArea):
             ctx.set_source_surface(self.image.preview_surface, 0, 0)
             ctx.paint()
             
+            # Rejilla de píxeles (solo con zoom > 200%)
+            if self.zoom > 2.0:
+                self._draw_pixel_grid(ctx, width, height)
+            
             # Marching ants
             if self.current_tool_name == "select_rect" and self.current_tool.has_selection:
                 self._draw_selection_marching_ants(ctx)
@@ -94,6 +99,27 @@ class DrawingArea(Gtk.DrawingArea):
                     self.current_tool.draw_handles(ctx, self.zoom)
             
             ctx.restore()
+
+    def _draw_pixel_grid(self, ctx, widget_width, widget_height):
+        """Dibuja lineas de grid separando cada pixel de la imagen (solo la porcion visible)."""
+        x0 = max(0, int((0 - self.offset_x) / self.zoom))
+        y0 = max(0, int((0 - self.offset_y) / self.zoom))
+        x1 = min(self.image.width, int((widget_width - self.offset_x) / self.zoom) + 1)
+        y1 = min(self.image.height, int((widget_height - self.offset_y) / self.zoom) + 1)
+        if x1 <= x0 or y1 <= y0:
+            return
+
+        ctx.save()
+        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.5)
+        ctx.set_line_width(1 / self.zoom)
+        for gx in range(x0, x1 + 1):
+            ctx.move_to(gx, y0)
+            ctx.line_to(gx, y1)
+        for gy in range(y0, y1 + 1):
+            ctx.move_to(x0, gy)
+            ctx.line_to(x1, gy)
+        ctx.stroke()
+        ctx.restore()
 
     def _draw_selection_marching_ants(self, ctx):
         if not self.current_tool.selection:
@@ -201,14 +227,17 @@ class DrawingArea(Gtk.DrawingArea):
     def zoom_in(self):
         self.zoom = min(self.zoom * 2, 8.0)
         self.queue_draw()
+        self.emit("zoom-changed", self.zoom)
 
     def zoom_out(self):
         self.zoom = max(self.zoom / 2, 0.125)
         self.queue_draw()
+        self.emit("zoom-changed", self.zoom)
 
     def zoom_reset(self):
         self.zoom = 1.0
         self.queue_draw()
+        self.emit("zoom-changed", self.zoom)
 
     def new_image(self, width, height):
         self.image.new(width, height)
